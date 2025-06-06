@@ -1,4 +1,6 @@
+
 import torch # need torch to work
+
 from gguf_connector.quant import dequantize as gq
 from gguf_connector.reader import GGMLQuantizationType, GGML_QUANT_SIZES
 from tqdm import tqdm
@@ -69,6 +71,7 @@ def dequantize_blocks_Q5_1(blocks, block_size, type_size, dtype=None):
     ql = (ql & 15).reshape((n_blocks, -1))
     qs = ql | qh << 4
     return d * qs + m
+
 def dequantize_blocks_Q5_0(blocks, block_size, type_size, dtype=None):
     n_blocks = blocks.shape[0]
     d, qh, qs = split_block_dims(blocks, 2, 4)
@@ -170,7 +173,6 @@ def dequantize_blocks_Q4_1(blocks, block_size, type_size, dtype=None):
     qs = (qs & 0x0F).reshape(n_blocks, -1)
     return (d * qs) + m
 
-
 def dequantize_blocks_Q4_0(blocks, block_size, type_size, dtype=None):
     n_blocks = blocks.shape[0]
     d, qs = split_block_dims(blocks, 2)
@@ -203,7 +205,6 @@ def dequantize_blocks_Q6_K(blocks, block_size, type_size, dtype=None):
     q = (ql | (qh << 4)).to(torch.int8) - 32
     q = q.reshape((n_blocks, QK_K // 16, -1))
     return (d * q).reshape((n_blocks, QK_K))
-
 
 def dequantize_blocks_Q5_K(blocks, block_size, type_size, dtype=None):
     n_blocks = blocks.shape[0]
@@ -264,7 +265,6 @@ def dequantize_blocks_Q3_K(blocks, block_size, type_size, dtype=None):
     qh = (qh.reshape((n_blocks, 16, QK_K // 16)) & 1) ^ 1
     q = ql.to(torch.int8) - (qh << 2).to(torch.int8)
     return (dl * q).reshape((n_blocks, QK_K))
-
 
 def dequantize_blocks_Q2_K(blocks, block_size, type_size, dtype=None):
     n_blocks = blocks.shape[0]
