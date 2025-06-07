@@ -12,18 +12,15 @@ def _quant_shape_from_byte_shape(shape, type_size, block_size):
 def dequantize_gguf_tensor(tensor):
     if not hasattr(tensor, "quant_type"):
         return tensor
-
     quant_type = tensor.quant_type
     dequant_fn = dequantize_functions[quant_type]
     block_size, type_size = GGML_QUANT_SIZES[quant_type]
     tensor = tensor.view(torch.uint8)
     shape = _quant_shape_from_byte_shape(tensor.shape, type_size, block_size)
-
     n_blocks = tensor.numel() // type_size
     blocks = tensor.reshape((n_blocks, type_size))
     dequant = dequant_fn(blocks, block_size, type_size)
     dequant = dequant.reshape(shape)
-
     return dequant.as_tensor()
 
 class GGUFParameter(torch.nn.Parameter):
@@ -33,7 +30,6 @@ class GGUFParameter(torch.nn.Parameter):
         self.quant_type = quant_type
         block_size, type_size = GGML_QUANT_SIZES[quant_type]
         self.quant_shape = _quant_shape_from_byte_shape(self.shape, type_size, block_size)
-
         return self
 
     def as_tensor(self):
@@ -52,9 +48,7 @@ class GGUFParameter(torch.nn.Parameter):
     def __torch_function__(cls, func, types, args=(), kwargs=None):
         if kwargs is None:
             kwargs = {}
-
         result = super().__torch_function__(func, types, args, kwargs)
-
         if isinstance(result, torch.Tensor):
             quant_type = cls._extract_quant_type(args)
             return cls(result, quant_type=quant_type)
